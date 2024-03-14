@@ -1,0 +1,12 @@
+devel/
+build/
+install/
+log/
+
+.vscode/
+.cache/
+__pycache__/
+.catkin_workspace
+*.gv
+*.pdf
+*.pcd

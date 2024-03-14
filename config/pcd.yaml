@@ -1,0 +1,12 @@
+/pcd2pgm:
+  ros__parameters:
+    file_directory: /home/lihanchen/Downloads/pcd2pgm/
+    file_name: RMUL
+    flag_pass_through: false
+    map_resolution: 0.05
+    map_topic_name: map
+    thre_radius: 0.5
+    thre_z_max: 3.0
+    thre_z_min: 0.1
+    thres_point_count: 10
+    use_sim_time: false
