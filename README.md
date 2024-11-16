@@ -61,14 +61,26 @@ ros2 run nav2_map_server map_saver_cli -f YOUR_MAP_NAME
   ```yaml
   /pcd2pgm:
     ros__parameters:
-      file_directory: /home/lihanchen/Downloads/pcd2pgm/  # PCD文件所在目录
-      file_name: RMUC  # PCD文件名（不包含后缀）
-      flag_pass_through: false  # 是否使用Pass Through滤波器
-      map_resolution: 0.05  # 地图分辨率
-      map_topic_name: map  # 发布地图的ROS话题名
-      thre_radius: 0.5  # Radius Outlier滤波器半径
-      thre_z_max: 2.0  # Z轴最大值（用于Pass Through滤波器）
-      thre_z_min: 0.1  # Z轴最小值（用于Pass Through滤波器）
-      thres_point_count: 10  # 最小点数阈值（用于Radius Outlier滤波器）
-      use_sim_time: false  # 是否使用仿真时间
+      pcd_file: /home/lihanchen/NAVIGATION_WS/pcd2pgm/rmuc_2024.pcd   # PCD文件所在目录
+      odom_to_lidar_odom: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]              # [x, y, z, r, p, y] 里程计到激光雷达的坐标变换（用于变换点云）
+      flag_pass_through: false                                        # 是否使用Pass Through滤波器
+      map_resolution: 0.05                                            # 地图分辨率
+      map_topic_name: map                                             # 发布地图的ROS话题名
+      thre_radius: 0.5                                                # Radius Outlier滤波器半径
+      thre_z_max: 2.0                                                 # Z轴最大值（用于Pass Through滤波器）
+      thre_z_min: 0.1                                                 # Z轴最小值（用于Pass Through滤波器）
+      thres_point_count: 10                                           # 最小点数阈值（用于Radius Outlier滤波器）
+      use_sim_time: false
   ```
+
+    pcd_file: /home/lihanchen/NAVIGATION_WS/pcd2pgm/rmuc_2024.pcd
+    odom_to_lidar_odom: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # odom_to_lidar_odom: [-0.16, 0.0, -0.18, -0.523599, 0.0, -1.5707963]
+    flag_pass_through: false
+    map_resolution: 0.05
+    map_topic_name: map
+    thre_radius: 0.1
+    thre_z_max: 1.5
+    thre_z_min: -0.05
+    thres_point_count: 10
+    use_sim_time: false

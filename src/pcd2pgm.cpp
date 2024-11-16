@@ -1,7 +1,9 @@
 #include "pcd2pgm/pcd2pgm.hpp"
 
+#include <pcl/common/transforms.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <rclcpp/qos.hpp>
 
@@ -19,11 +21,20 @@ PCLFiltersNode::PCLFiltersNode(const rclcpp::NodeOptions & options) : Node("pcd2
 
   pcd_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   map_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(map_topic_name_, map_qos);
+  pcd_publisher_ =
+    this->create_publisher<sensor_msgs::msg::PointCloud2>("pcd_cloud", 10);  // 初始化发布器
 
   if (pcl::io::loadPCDFile<pcl::PointXYZ>(pcd_file_, *pcd_cloud) == -1) {
     RCLCPP_ERROR(get_logger(), "Couldn't read file: %s", pcd_file_.c_str());
     return;
   }
+
+  applyTransform();
+
+  sensor_msgs::msg::PointCloud2 output;
+  pcl::toROSMsg(*pcd_cloud, output);
+  output.header.frame_id = "map";
+  pcd_publisher_->publish(output);
 
   RCLCPP_INFO(get_logger(), "Initial point cloud size: %lu", pcd_cloud->points.size());
 
@@ -48,6 +59,8 @@ void PCLFiltersNode::declareParameters()
   declare_parameter("map_resolution", 0.05);
   declare_parameter("thres_point_count", 10);
   declare_parameter("map_topic_name", "map");
+  declare_parameter(
+    "odom_to_lidar_odom", std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});  // 新增的参数
 }
 
 void PCLFiltersNode::getParameters()
@@ -60,6 +73,7 @@ void PCLFiltersNode::getParameters()
   get_parameter("map_resolution", map_resolution_);
   get_parameter("thres_point_count", thres_point_count_);
   get_parameter("map_topic_name", map_topic_name_);
+  get_parameter("odom_to_lidar_odom", odom_to_lidar_odom_);  // 获取新的参数
 }
 
 void PCLFiltersNode::passThroughFilter(
@@ -146,6 +160,23 @@ void PCLFiltersNode::setMapTopicMsg(
   }
 
   RCLCPP_INFO(get_logger(), "Map data size: %lu", msg.data.size());
+}
+
+void PCLFiltersNode::applyTransform()
+{
+  Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+
+  transform.translation() << odom_to_lidar_odom_[0], odom_to_lidar_odom_[1], odom_to_lidar_odom_[2];
+
+  transform.rotate(Eigen::AngleAxisf(odom_to_lidar_odom_[3], Eigen::Vector3f::UnitX()));
+  transform.rotate(Eigen::AngleAxisf(odom_to_lidar_odom_[4], Eigen::Vector3f::UnitY()));
+  transform.rotate(Eigen::AngleAxisf(odom_to_lidar_odom_[5], Eigen::Vector3f::UnitZ()));
+
+  Eigen::Affine3f inverse_transform = transform.inverse();
+
+  pcl::transformPointCloud(*pcd_cloud, *pcd_cloud, inverse_transform);
+
+  RCLCPP_INFO(get_logger(), "Applied inverse transformation to point cloud");
 }
 
 }  // namespace pcd2pgm

@@ -2,6 +2,7 @@
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 namespace pcd2pgm
 {
@@ -16,6 +17,7 @@ private:
   int thres_point_count_;
   std::string pcd_file_;
   std::string map_topic_name_;
+  std::vector<double> odom_to_lidar_odom_;
 
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_cloud;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_after_PassThrough_;
@@ -23,6 +25,7 @@ private:
   nav_msgs::msg::OccupancyGrid map_topic_msg_;
 
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_publisher_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcd_publisher_;  // 新增的发布器
   rclcpp::TimerBase::SharedPtr time_;
 
   void declareParameters();
@@ -41,6 +44,8 @@ private:
     const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, nav_msgs::msg::OccupancyGrid & msg);
 
   void publishMap();
+
+  void applyTransform();
 
 public:
   explicit PCLFiltersNode(const rclcpp::NodeOptions & options);

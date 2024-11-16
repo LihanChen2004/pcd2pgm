@@ -1,11 +1,13 @@
 /pcd2pgm:
   ros__parameters:
     pcd_file: /home/lihanchen/NAVIGATION_WS/pcd2pgm/rmuc_2024.pcd
+    odom_to_lidar_odom: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # odom_to_lidar_odom: [-0.16, 0.0, -0.18, -0.523599, 0.0, -1.5707963]
     flag_pass_through: false
     map_resolution: 0.05
     map_topic_name: map
-    thre_radius: 0.5
-    thre_z_max: 3.0
-    thre_z_min: 0.1
+    thre_radius: 0.1
+    thre_z_max: 1.5
+    thre_z_min: -0.05
     thres_point_count: 10
     use_sim_time: false
