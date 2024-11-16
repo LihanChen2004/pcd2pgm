@@ -40,8 +40,7 @@ void PCLFiltersNode::publishMap() { map_publisher_->publish(map_topic_msg_); }
 
 void PCLFiltersNode::declareParameters()
 {
-  declare_parameter("file_directory", "/home/lihanchen/Downloads/pcd2pgm/");
-  declare_parameter("file_name", "RMUC");
+  declare_parameter("pcd_file", "");
   declare_parameter("thre_z_min", 0.5);
   declare_parameter("thre_z_max", 2.0);
   declare_parameter("flag_pass_through", false);
@@ -53,8 +52,7 @@ void PCLFiltersNode::declareParameters()
 
 void PCLFiltersNode::getParameters()
 {
-  get_parameter("file_directory", file_directory_);
-  get_parameter("file_name", file_name_);
+  get_parameter("pcd_file", pcd_file_);
   get_parameter("thre_z_min", thre_z_min_);
   get_parameter("thre_z_max", thre_z_max_);
   get_parameter("flag_pass_through", flag_pass_through_);
@@ -62,7 +60,6 @@ void PCLFiltersNode::getParameters()
   get_parameter("map_resolution", map_resolution_);
   get_parameter("thres_point_count", thres_point_count_);
   get_parameter("map_topic_name", map_topic_name_);
-  pcd_file_ = file_directory_ + file_name_ + ".pcd";
 }
 
 void PCLFiltersNode::passThroughFilter(

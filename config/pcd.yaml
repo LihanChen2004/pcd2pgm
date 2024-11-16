@@ -1,7 +1,6 @@
 /pcd2pgm:
   ros__parameters:
-    file_directory: /home/lihanchen/Downloads/pcd2pgm/
-    file_name: RMUL
+    pcd_file: /home/lihanchen/NAVIGATION_WS/pcd2pgm/rmuc_2024.pcd
     flag_pass_through: false
     map_resolution: 0.05
     map_topic_name: map

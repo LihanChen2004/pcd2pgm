@@ -16,7 +16,6 @@ private:
   int thres_point_count_;
   std::string pcd_file_;
   std::string map_topic_name_;
-  std::string file_directory_, file_name_;
 
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_cloud;
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_after_PassThrough_;
