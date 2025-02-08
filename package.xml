@@ -2,16 +2,14 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>pcd2pgm</name>
-  <version>0.1.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="1120220476@smbu.edu.cn">LihanChen</maintainer>
-  <license>MIT</license>
-  <author email="1120220476@smbu.edu.cn">LihanChen</author>
+  <version>0.0.0</version>
+  <description>Convert .pcd files to .pgm grid maps for navigation.</description>
+  <maintainer email="lihanchen2004@163.com">LihanChen</maintainer>
+  <license>Apache-2.0</license>
+  <author email="lihanchen2004@163.com">LihanChen</author>
 
-  <!-- buildtool_depend: dependencies of the build process -->
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!-- depend: build, export, and execution dependency -->
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>nav_msgs</depend>

@@ -1,55 +1,67 @@
+// Copyright 2025 Lihan Chen
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "pcd2pgm/pcd2pgm.hpp"
 
-#include <pcl/common/transforms.h>
-#include <pcl/filters/radius_outlier_removal.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl_conversions/pcl_conversions.h>
-
-#include <rclcpp/qos.hpp>
+#include "pcl/common/transforms.h"
+#include "pcl/filters/radius_outlier_removal.h"
+#include "pcl/io/pcd_io.h"
+#include "pcl_conversions/pcl_conversions.h"
 
 namespace pcd2pgm
 {
-PCLFiltersNode::PCLFiltersNode(const rclcpp::NodeOptions & options) : Node("pcd2pgm", options)
+Pcd2PgmNode::Pcd2PgmNode(const rclcpp::NodeOptions & options) : Node("pcd2pgm", options)
 {
   declareParameters();
   getParameters();
 
-  rclcpp::QoS map_qos(10);  // initialize to default
+  rclcpp::QoS map_qos(10);
   map_qos.transient_local();
   map_qos.reliable();
   map_qos.keep_last(1);
 
-  pcd_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcd_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   map_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(map_topic_name_, map_qos);
-  pcd_publisher_ =
-    this->create_publisher<sensor_msgs::msg::PointCloud2>("pcd_cloud", 10);  // 初始化发布器
+  pcd_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("pcd_cloud", 10);
 
-  if (pcl::io::loadPCDFile<pcl::PointXYZ>(pcd_file_, *pcd_cloud) == -1) {
+  if (pcl::io::loadPCDFile<pcl::PointXYZ>(pcd_file_, *pcd_cloud_) == -1) {
     RCLCPP_ERROR(get_logger(), "Couldn't read file: %s", pcd_file_.c_str());
     return;
   }
 
+  RCLCPP_INFO(get_logger(), "Initial point cloud size: %lu", pcd_cloud_->points.size());
+
   applyTransform();
 
-  sensor_msgs::msg::PointCloud2 output;
-  pcl::toROSMsg(*pcd_cloud, output);
-  output.header.frame_id = "map";
-  pcd_publisher_->publish(output);
-
-  RCLCPP_INFO(get_logger(), "Initial point cloud size: %lu", pcd_cloud->points.size());
-
   passThroughFilter(thre_z_min_, thre_z_max_, flag_pass_through_);
-  radiusOutlierFilter(cloud_after_PassThrough_, thre_radius_, thres_point_count_);
-  setMapTopicMsg(cloud_after_Radius_, map_topic_msg_);
+  radiusOutlierFilter(cloud_after_pass_through_, thre_radius_, thres_point_count_);
+  setMapTopicMsg(cloud_after_radius_, map_topic_msg_);
 
-  time_ = create_wall_timer(std::chrono::seconds(1), std::bind(&PCLFiltersNode::publishMap, this));
+  timer_ =
+    create_wall_timer(std::chrono::seconds(1), std::bind(&Pcd2PgmNode::publishCallback, this));
 }
 
-PCLFiltersNode::~PCLFiltersNode() {}
+void Pcd2PgmNode::publishCallback()
+{
+  sensor_msgs::msg::PointCloud2 output;
+  pcl::toROSMsg(*cloud_after_radius_, output);
+  output.header.frame_id = "map";
+  pcd_publisher_->publish(output);
+  map_publisher_->publish(map_topic_msg_);
+}
 
-void PCLFiltersNode::publishMap() { map_publisher_->publish(map_topic_msg_); }
-
-void PCLFiltersNode::declareParameters()
+void Pcd2PgmNode::declareParameters()
 {
   declare_parameter("pcd_file", "");
   declare_parameter("thre_z_min", 0.5);
@@ -63,7 +75,7 @@ void PCLFiltersNode::declareParameters()
     "odom_to_lidar_odom", std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0});  // 新增的参数
 }
 
-void PCLFiltersNode::getParameters()
+void Pcd2PgmNode::getParameters()
 {
   get_parameter("pcd_file", pcd_file_);
   get_parameter("thre_z_min", thre_z_min_);
@@ -76,43 +88,38 @@ void PCLFiltersNode::getParameters()
   get_parameter("odom_to_lidar_odom", odom_to_lidar_odom_);  // 获取新的参数
 }
 
-void PCLFiltersNode::passThroughFilter(
-  const double & thre_low, const double & thre_high, const bool & flag_in)
+void Pcd2PgmNode::passThroughFilter(double thre_low, double thre_high, bool flag_in)
 {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr capt(new pcl::PointCloud<pcl::PointXYZ>);
-  cloud_after_PassThrough_ = capt;
-
+  auto filtered_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::PassThrough<pcl::PointXYZ> passthrough;
-  passthrough.setInputCloud(pcd_cloud);
+  passthrough.setInputCloud(pcd_cloud_);
   passthrough.setFilterFieldName("z");
   passthrough.setFilterLimits(thre_low, thre_high);
   passthrough.setNegative(flag_in);
-  passthrough.filter(*cloud_after_PassThrough_);
+  passthrough.filter(*filtered_cloud);
 
+  cloud_after_pass_through_ = filtered_cloud;
   RCLCPP_INFO(
-    get_logger(), "After PassThrough filtering, point cloud size: %lu",
-    cloud_after_PassThrough_->points.size());
+    get_logger(), "After PassThrough filtering: %lu points",
+    cloud_after_pass_through_->points.size());
 }
 
-void PCLFiltersNode::radiusOutlierFilter(
-  const pcl::PointCloud<pcl::PointXYZ>::Ptr & pcd_cloud0, const double & radius,
-  const int & thre_count)
+void Pcd2PgmNode::radiusOutlierFilter(
+  const pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud, double radius, int thre_count)
 {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr car(new pcl::PointCloud<pcl::PointXYZ>);
-  cloud_after_Radius_ = car;
+  auto filtered_cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_outlier;
+  radius_outlier.setInputCloud(input_cloud);
+  radius_outlier.setRadiusSearch(radius);
+  radius_outlier.setMinNeighborsInRadius(thre_count);
+  radius_outlier.filter(*filtered_cloud);
 
-  pcl::RadiusOutlierRemoval<pcl::PointXYZ> radiusoutlier;
-  radiusoutlier.setInputCloud(pcd_cloud0);
-  radiusoutlier.setRadiusSearch(radius);
-  radiusoutlier.setMinNeighborsInRadius(thre_count);
-  radiusoutlier.filter(*cloud_after_Radius_);
-
+  cloud_after_radius_ = filtered_cloud;
   RCLCPP_INFO(
-    get_logger(), "After RadiusOutlier filtering, point cloud size: %lu",
-    cloud_after_Radius_->points.size());
+    get_logger(), "After RadiusOutlier filtering: %lu points", cloud_after_radius_->points.size());
 }
 
-void PCLFiltersNode::setMapTopicMsg(
+void Pcd2PgmNode::setMapTopicMsg(
   const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, nav_msgs::msg::OccupancyGrid & msg)
 {
   msg.header.stamp = now();
@@ -132,10 +139,10 @@ void PCLFiltersNode::setMapTopicMsg(
   }
 
   for (const auto & point : cloud->points) {
-    x_min = std::min(x_min, (double)point.x);
-    x_max = std::max(x_max, (double)point.x);
-    y_min = std::min(y_min, (double)point.y);
-    y_max = std::max(y_max, (double)point.y);
+    x_min = std::min(x_min, static_cast<double>(point.x));
+    x_max = std::max(x_max, static_cast<double>(point.x));
+    y_min = std::min(y_min, static_cast<double>(point.y));
+    y_max = std::max(y_max, static_cast<double>(point.y));
   }
 
   msg.info.origin.position.x = x_min;
@@ -162,24 +169,19 @@ void PCLFiltersNode::setMapTopicMsg(
   RCLCPP_INFO(get_logger(), "Map data size: %lu", msg.data.size());
 }
 
-void PCLFiltersNode::applyTransform()
+void Pcd2PgmNode::applyTransform()
 {
   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
   transform.translation() << odom_to_lidar_odom_[0], odom_to_lidar_odom_[1], odom_to_lidar_odom_[2];
-
   transform.rotate(Eigen::AngleAxisf(odom_to_lidar_odom_[3], Eigen::Vector3f::UnitX()));
   transform.rotate(Eigen::AngleAxisf(odom_to_lidar_odom_[4], Eigen::Vector3f::UnitY()));
   transform.rotate(Eigen::AngleAxisf(odom_to_lidar_odom_[5], Eigen::Vector3f::UnitZ()));
 
-  Eigen::Affine3f inverse_transform = transform.inverse();
-
-  pcl::transformPointCloud(*pcd_cloud, *pcd_cloud, inverse_transform);
-
-  RCLCPP_INFO(get_logger(), "Applied inverse transformation to point cloud");
+  pcl::transformPointCloud(*pcd_cloud_, *pcd_cloud_, transform.inverse());
 }
 
 }  // namespace pcd2pgm
 
 #include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(pcd2pgm::PCLFiltersNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(pcd2pgm::Pcd2PgmNode)
