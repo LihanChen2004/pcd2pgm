@@ -41,7 +41,7 @@ repos:
       - id: codespell
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.4
+    rev: v0.14.5
     hooks:
       - id: ruff
         args: [--fix]
@@ -76,7 +76,7 @@ repos:
         exclude: "^\\.(devcontainer|github)/"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.34.1
+    rev: 0.35.0
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
