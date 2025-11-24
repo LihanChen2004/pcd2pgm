@@ -26,7 +26,7 @@ pull_request_rules:
     conditions:
       - base!=main
       - author!=LihanChen2004
-      - author!=mergify
+      - author!=mergify[bot]
     actions:
         comment:
           message: |
@@ -44,3 +44,11 @@ pull_request_rules:
           message: |
             @{{author}}, your PR has failed to build. Please check CI outputs and resolve issues.
             You may need to rebase or pull in `main` due to API changes (or your contribution genuinely fails).
+
+  - name: automatic merge for pre-commit ci updates
+    conditions:
+      - author=pre-commit-ci[bot]
+      - title=[pre-commit.ci] pre-commit autoupdate
+    actions:
+      merge:
+        method: merge
