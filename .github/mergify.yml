@@ -49,6 +49,7 @@ pull_request_rules:
     conditions:
       - author=pre-commit-ci[bot]
       - title=[pre-commit.ci] pre-commit autoupdate
+      - check-success=build_and_test
     actions:
       merge:
         method: merge
