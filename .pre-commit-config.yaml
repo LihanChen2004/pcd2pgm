@@ -41,14 +41,14 @@ repos:
       - id: codespell
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.9
+    rev: v0.14.10
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.7
+    rev: v21.1.8
     hooks:
       - id: clang-format
         args: ["-fallback-style=none", "-i"]
@@ -76,7 +76,7 @@ repos:
         exclude: "^\\.(devcontainer|github)/"
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.35.0
+    rev: 0.36.0
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
